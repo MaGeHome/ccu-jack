@@ -270,6 +270,7 @@ const (
 	ChannelEnergyCounter
 	ChannelGasCounter
 	ChannelUnreach
+	ChannelBlind
 
 	ChannelMQTTKeySender
 	ChannelMQTTKeyReceiver
@@ -283,6 +284,7 @@ const (
 	ChannelMQTTEnergyCounter
 	ChannelMQTTGasCounter
 	ChannelMQTTUnreach
+	ChannelMQTTBlind
 	ChannelMQTTBRoll
 )
 
@@ -298,6 +300,7 @@ var (
 		ChannelEnergyCounter: "STATIC_ENERGY_COUNTER",
 		ChannelGasCounter:    "STATIC_GAS_COUNTER",
 		ChannelUnreach:       "STATIC_UNREACH",
+		ChannelBlind:         "STATIC_BLIND",
 
 		ChannelMQTTKeySender:      "MQTT_KEY_SENDER",
 		ChannelMQTTKeyReceiver:    "MQTT_KEY_RECEIVER",
@@ -311,6 +314,7 @@ var (
 		ChannelMQTTEnergyCounter:  "MQTT_ENERGY_COUNTER",
 		ChannelMQTTGasCounter:     "MQTT_GAS_COUNTER",
 		ChannelMQTTUnreach:        "MQTT_UNREACH",
+		ChannelMQTTBlind:          "MQTT_BLIND",
 		ChannelMQTTBRoll:          "MQTT_BROLL",
 	}
 	errChannelKind = errors.New("invalid channel kind identifier")

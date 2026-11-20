@@ -18,6 +18,7 @@ function ChannelKindSelect() {
                 m("option[value=STATIC_ENERGY_COUNTER]", { selected: channel.Kind === "STATIC_ENERGY_COUNTER" }, "Statischer Energiezähler"),
                 m("option[value=STATIC_GAS_COUNTER]", { selected: channel.Kind === "STATIC_GAS_COUNTER" }, "Statischer Gaszähler"),
                 m("option[value=STATIC_UNREACH]", { selected: channel.Kind === "STATIC_UNREACH" }, "Statische Kommunikationsstörung"),
+                m("option[value=STATIC_BLIND]", { selected: channel.Kind === "STATIC_BLIND" }, "Statischer Rollladen"),
                 m("option[value=MQTT_KEY_SENDER]", { selected: channel.Kind === "MQTT_KEY_SENDER" }, "MQTT Sendetaster"),
                 m("option[value=MQTT_KEY_RECEIVER]", { selected: channel.Kind === "MQTT_KEY_RECEIVER" }, "MQTT Empfangstaster"),
                 m("option[value=MQTT_SWITCH]", { selected: channel.Kind === "MQTT_SWITCH" }, "MQTT Schaltaktor"),
@@ -30,6 +31,7 @@ function ChannelKindSelect() {
                 m("option[value=MQTT_ENERGY_COUNTER]", { selected: channel.Kind === "MQTT_ENERGY_COUNTER" }, "MQTT Energiezähler"),
                 m("option[value=MQTT_GAS_COUNTER]", { selected: channel.Kind === "MQTT_GAS_COUNTER" }, "MQTT Gaszähler"),
                 m("option[value=MQTT_UNREACH]", { selected: channel.Kind === "MQTT_UNREACH" }, "MQTT Kommunikationsstörung"),
+                m("option[value=MQTT_BLIND]", { selected: channel.Kind === "MQTT_BLIND" }, "MQTT Rollladen"),
                 m("option[value=MQTT_BROLL]", { selected: channel.Kind === "MQTT_BROLL" }, "MQTT HmIP-BROLL Rollladenaktor"),
             )
         }
@@ -45,6 +47,7 @@ function HMTypeSelect() {
         ["HM-LC-Dim1T-FM", "Dimmaktor 1-fach, Phasenab., UP"],
         ["HM-LC-Dim1T-DR", "Dimmaktor 1-fach, Phasenab., Huts."],
         ["HM-LC-Dim1TPBU-FM", "Dimmaktor 1-fach für Markens."],
+        ["HM-LC-Bl1-FM", "Rollladenaktor"],
         ["HM-LC-Sw1-FM", "Schaltaktor 1-fach, UP"],
         ["HM-LC-Sw2-FM", "Schaltaktor 2-fach, UP"],
         ["HM-LC-Sw1-DR", "Schaltaktor 1-fach, Huts."],

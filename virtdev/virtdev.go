@@ -228,6 +228,9 @@ func (vd *VirtualDevices) createDevice(devcfg *rtcfg.Device) error {
 		case rtcfg.ChannelUnreach:
 			ch := vd.addStaticUnreach(dev)
 			log.Debugf("Created static unreach channel: %s", ch.Description().Address)
+		case rtcfg.ChannelBlind:
+			ch := vd.addStaticBlind(dev)
+			log.Debugf("Created static blind channel: %s", ch.Description().Address)
 
 		case rtcfg.ChannelMQTTKeySender:
 			ch := vd.addMQTTKeySender(dev)
@@ -265,6 +268,9 @@ func (vd *VirtualDevices) createDevice(devcfg *rtcfg.Device) error {
 		case rtcfg.ChannelMQTTUnreach:
 			ch := vd.addMQTTUnreach(dev)
 			log.Debugf("Created MQTT connection error channel: %s", ch.Description().Address)
+		case rtcfg.ChannelMQTTBlind:
+			ch := vd.addMQTTBlind(dev)
+			log.Debugf("Created MQTT blind channel: %s", ch.Description().Address)
 		case rtcfg.ChannelMQTTBRoll:
 			ch := vd.addMQTTBRoll(dev)
 			log.Debugf("Created MQTT BROLL device starting at channel: %s", ch.Description().Address)
