@@ -35,8 +35,42 @@ The Go release build (`go run .` from `build`) reuses the CCU3/OpenCCU
 ARMv7 binary and packages it with the templates in [debmatic/](./debmatic).
 The layout follows the [original Debmatic package](https://homematic-forum.de/forum/viewtopic.php?p=777847#p777847).
 GitHub Actions uploads `ccu-jack-debmatic-rp2+3-<version>.tar.gz` as a build
-artifact. The binary targets ARMv7 (Raspberry Pi 2/3). On ARM64, the host
-must support running 32-bit ARM executables.
+artifact and attaches it to releases created from matching version tags.
+The binary targets ARMv7 (Raspberry Pi 2/3). On ARM64, the host must support
+running 32-bit ARM executables.
+
+### Debian packages (all architectures)
+
+[create_ccu_jack_deb.sh](./debmatic/create_ccu_jack_deb.sh) builds `.deb`
+packages for all architectures supported by Debmatic (`armhf`, `arm64`,
+`i386`, `amd64`) on a single Debian/Ubuntu host. It follows the pattern of
+Alexander Reinert's
+[create_detect_radio_module.sh](https://github.com/alexreinert/piVCCU/blob/master/create_detect_radio_module.sh):
+cross-compile per architecture, fill the [DEBIAN/](./debmatic/DEBIAN)
+templates (`{PKG_VERSION}`, `{PKG_ARCH}`), then package with
+`dpkg-deb --build`. No cross toolchains are needed because Go
+cross-compiles natively (`GOOS`/`GOARCH`/`GOARM`, `CGO_ENABLED=0`).
+CI builds the packages for its build artifacts and attaches them to releases
+created from matching version tags.
+
+The `armhf` package uses `GOARM=7`, matching Debmatic's ARMv7 platform
+requirements. It does not add support for ARMv6 devices such as Raspberry Pi
+1/Zero. The `arm64` package is native; no 32-bit multiarch support is required.
+
+```sh
+cd dist/debmatic && ./create_ccu_jack_deb.sh   # version from build/main.go
+sudo apt install ./ccu-jack_<version>-1_<arch>.deb
+```
+
+For an update, download the new package for the same architecture and install
+it with the same command. There is no APT repository, so APT will not discover
+new versions automatically.
+
+The package declares `/etc/config/addons/ccu-jack.cfg` as conffile, so
+dpkg preserves the configuration on updates. `postinst`/`prerm`/`postrm`
+handle service registration, the `hm_addons.cfg` entry, and cleanup;
+`apt purge ccu-jack` removes a package installation. Do not mix package
+installation with the tar archive method documented below.
 
 ### Fresh installation
 

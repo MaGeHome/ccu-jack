@@ -38,12 +38,16 @@ jobs:
         cd build
         go run .
 
+    - name: Build Debian packages
+      run: dist/debmatic/create_ccu_jack_deb.sh
+
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
       with:
         path: |
           ccu-jack-*.tar.gz
           ccu-jack-*.zip
+          ccu-jack_*.deb
         name: ccu-jack-${{ github.sha }}
         retention-days: 30
 

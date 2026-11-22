@@ -1,1 +1,1 @@
-dist/debmatic/* text eol=lf
+dist/debmatic/** text eol=lf
