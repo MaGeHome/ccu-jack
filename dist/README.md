@@ -29,93 +29,52 @@ GOARCH=arm
 GOARM=7
 ```
 
-## Debmatic (ARMv7)
+## CCU Add-on (all supported architectures)
 
-The Go release build (`go run .` from `build`) reuses the CCU3/OpenCCU
-ARMv7 binary and packages it with the templates in [debmatic/](./debmatic).
-The layout follows the [original Debmatic package](https://homematic-forum.de/forum/viewtopic.php?p=777847#p777847).
-GitHub Actions uploads `ccu-jack-debmatic-rp2+3-<version>.tar.gz` as a build
-artifact and attaches it to releases created from matching version tags.
-The binary targets ARMv7 (Raspberry Pi 2/3). On ARM64, the host must support
-running 32-bit ARM executables.
+The Go release build (`go run .` from `build`) creates one universal
+`ccu-jack-ccu-addon-<version>.tar.gz` archive. It contains binaries for
+OpenCCU Raspberry Pi 0/1 (ARMv6), Pi 2/3 (ARMv7), Pi 4/5 (ARM64), and VCCU
+32-bit and 64-bit x86. Its launcher selects the binary from `uname -m`, so
+users do not need to choose an architecture-specific archive.
 
 ### Debian packages (all architectures)
 
-[create_ccu_jack_deb.sh](./debmatic/create_ccu_jack_deb.sh) builds `.deb`
-packages for all architectures supported by Debmatic (`armhf`, `arm64`,
-`i386`, `amd64`) on a single Debian/Ubuntu host. It follows the pattern of
-Alexander Reinert's
+[create_ccu_jack_deb.sh](./debmatic/create_ccu_jack_deb.sh) builds one
+architecture-independent `.deb` for all architectures supported by Debmatic
+(`armhf`, `arm64`, `i386`, `amd64`) on a single Debian/Ubuntu host. It follows
+the pattern of Alexander Reinert's
 [create_detect_radio_module.sh](https://github.com/alexreinert/piVCCU/blob/master/create_detect_radio_module.sh):
 cross-compile per architecture, fill the [DEBIAN/](./debmatic/DEBIAN)
 templates (`{PKG_VERSION}`, `{PKG_ARCH}`), then package with
 `dpkg-deb --build`. No cross toolchains are needed because Go
 cross-compiles natively (`GOOS`/`GOARCH`/`GOARM`, `CGO_ENABLED=0`).
-CI builds the packages for its build artifacts and attaches them to releases
-created from matching version tags.
+The package contains all four binaries; its launcher selects the native one
+from the installed Debian architecture. CI builds the package for its build
+artifacts and attaches it to releases created from matching version tags.
 
-The `armhf` package uses `GOARM=7`, matching Debmatic's ARMv7 platform
-requirements. It does not add support for ARMv6 devices such as Raspberry Pi
-1/Zero. The `arm64` package is native; no 32-bit multiarch support is required.
+The package contains native binaries for Debian `armhf`, `arm64`, `i386`, and
+`amd64`. Its `armhf` binary uses `GOARM=7`; ARMv6 devices such as Raspberry Pi
+1/Zero are not supported by Debmatic. The `arm64` binary is native, so no
+32-bit multiarch support is required.
 
 ```sh
 cd dist/debmatic && ./create_ccu_jack_deb.sh   # version from build/main.go
-sudo apt install ./ccu-jack_<version>-1_<arch>.deb
+sudo apt install ./ccu-jack_<version>-1_all.deb
 ```
 
-For an update, download the new package for the same architecture and install
-it with the same command. There is no APT repository, so APT will not discover
-new versions automatically.
+For an update, download the new universal package and install it with the same
+command. There is no APT repository, so APT will not discover new versions
+automatically.
 
 The package declares `/etc/config/addons/ccu-jack.cfg` as conffile, so
 dpkg preserves the configuration on updates. `postinst`/`prerm`/`postrm`
-handle service registration, the `hm_addons.cfg` entry, and cleanup;
-`apt purge ccu-jack` removes a package installation. Do not mix package
-installation with the tar archive method documented below.
+handle service registration, the `hm_addons.cfg` entry, and cleanup. Use
+`apt purge ccu-jack` to remove a package installation.
 
-### Fresh installation
-
-Replace `<version>` with the package version. Use this command only on a
-fresh installation: the archive includes `/etc/config/addons/ccu-jack.cfg`
-and extracting it without an exclusion overwrites any existing configuration.
-
-```sh
-sudo tar -C / -xzf 'ccu-jack-debmatic-rp2+3-<version>.tar.gz' &&
-    sudo systemctl daemon-reload &&
-    sudo systemctl enable ccu-jack.service &&
-    sudo systemctl restart debmatic.service
-```
-
-Open CCU-Jack from the Debmatic control panel or at `http://<CCU-IP>:2121`.
-
-### Update
-
-Back up `/etc/config/addons/ccu-jack.cfg` before updating. Do not uninstall the
-previous version. Use the same archive, but exclude the configuration entry
-to preserve settings and virtual devices:
-
-```sh
-sudo systemctl stop ccu-jack.service &&
-    sudo tar --no-overwrite-dir --exclude='etc/config/addons/ccu-jack.cfg' \
-        -C / -xzf 'ccu-jack-debmatic-rp2+3-<version>.tar.gz' &&
-    sudo systemctl daemon-reload &&
-    sudo systemctl start ccu-jack.service
-```
-
-### Uninstall
-
-Stop and disable `ccu-jack.service`, then remove the CCU-Jack files listed
-below and run `sudo systemctl daemon-reload`. Back up the configuration
-before deleting it. Remove only the `ccu-jack` entry from the shared add-on
-list, not the entries of other add-ons.
-
-| Path | Purpose |
-| --- | --- |
-| `/usr/local/addons/ccu-jack/` | Application files and Web UI |
-| `/etc/config/addons/ccu-jack.cfg` | Active configuration |
-| `/etc/config/addons/www/ccu-jack/` | Debmatic control panel integration |
-| `/usr/lib/systemd/system/ccu-jack.service` | systemd unit |
-| `/etc/config/hm_addons.cfg` | Shared add-on list; edit only the CCU-Jack entry |
-| `/var/log/ccu-jack.log` | Log file; keep or remove as needed |
+The old ARMv7 Debmatic tar.gz is no longer generated. The `.deb` is the
+Debmatic installation and update package for all supported Debian
+architectures. There is no APT repository, so APT will not discover new
+versions automatically.
 
 ## Windows
 ```

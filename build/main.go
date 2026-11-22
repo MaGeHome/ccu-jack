@@ -26,12 +26,14 @@ var (
 	ldFlagsEx    = ldFlags + " -X main.appCopyright=" + appCopyright
 
 	// target systems to be built
-	targetSystems = []string{
+	ccuTargetSystems = []string{
 		"ccu3-rm-rp2+3",
 		"rm-rp0+1",
 		"rm-rp4",
 		"vccu-x86",
 		"vccu-x86_64",
+	}
+	targetSystems = []string{
 		"win",
 		"linux",
 		"darwin",
@@ -39,17 +41,16 @@ var (
 
 	// target system specifications
 	sysSpecs = map[string]struct {
-		addon  bool
 		goSpec releng.GoSpec
 	}{
-		"rm-rp0+1":      {true, releng.GoSpec{OS: "linux", Arch: "arm", Arm: "6", LDFlags: ldFlagsEx}},
-		"ccu3-rm-rp2+3": {true, releng.GoSpec{OS: "linux", Arch: "arm", Arm: "7", LDFlags: ldFlagsEx}},
-		"rm-rp4":        {true, releng.GoSpec{OS: "linux", Arch: "arm64", LDFlags: ldFlagsEx}},
-		"vccu-x86":      {true, releng.GoSpec{OS: "linux", Arch: "386", LDFlags: ldFlagsEx}},
-		"vccu-x86_64":   {true, releng.GoSpec{OS: "linux", Arch: "amd64", LDFlags: ldFlagsEx}},
-		"win":           {false, releng.GoSpec{OS: "windows", Arch: "amd64", LDFlags: ldFlagsEx}},
-		"linux":         {false, releng.GoSpec{OS: "linux", Arch: "amd64", LDFlags: ldFlagsEx}},
-		"darwin":        {false, releng.GoSpec{OS: "darwin", Arch: "amd64", LDFlags: ldFlagsEx}},
+		"rm-rp0+1":      {releng.GoSpec{OS: "linux", Arch: "arm", Arm: "6", LDFlags: ldFlagsEx}},
+		"ccu3-rm-rp2+3": {releng.GoSpec{OS: "linux", Arch: "arm", Arm: "7", LDFlags: ldFlagsEx}},
+		"rm-rp4":        {releng.GoSpec{OS: "linux", Arch: "arm64", LDFlags: ldFlagsEx}},
+		"vccu-x86":      {releng.GoSpec{OS: "linux", Arch: "386", LDFlags: ldFlagsEx}},
+		"vccu-x86_64":   {releng.GoSpec{OS: "linux", Arch: "amd64", LDFlags: ldFlagsEx}},
+		"win":           {releng.GoSpec{OS: "windows", Arch: "amd64", LDFlags: ldFlagsEx}},
+		"linux":         {releng.GoSpec{OS: "linux", Arch: "amd64", LDFlags: ldFlagsEx}},
+		"darwin":        {releng.GoSpec{OS: "darwin", Arch: "amd64", LDFlags: ldFlagsEx}},
 	}
 
 	// files for non ccu target systems
@@ -68,16 +69,17 @@ var (
 		{Inc: "dist/ccu/update_script", Exe: true},
 		{Inc: "README.md", DstDir: "addon"},
 		{Inc: "LICENSE.txt", DstDir: "addon"},
+		{Inc: "dist/ccu/addon/ccu-jack", DstDir: "addon", Exe: true},
 		{Inc: "dist/ccu/addon/ccu-jack-default.cfg", DstDir: "addon"},
 		{Inc: "build/tmp/VERSION", DstDir: "addon"},
 		{Inc: "dist/update_hm_addons.tcl", DstDir: "addon", Exe: true},
 		{Inc: "third-party-licenses/*", DstDir: "addon/third-party-licenses"},
 		{Inc: "wd/webui/*", DstDir: "addon/webui"},
 		{Inc: "wd/webui/ext/*", DstDir: "addon/webui/ext"},
-		{Inc: "build/tmp/ccu-jack", DstDir: "rc.d", Exe: true},
 		{Inc: "dist/ccu/etc/monit-ccu-jack.cfg", DstDir: "etc"},
 		{Inc: "dist/ccu/www/config.cgi", DstDir: "www", Exe: true},
 		{Inc: "dist/ccu/www/update-check.cgi", DstDir: "www", Exe: true},
+		{Inc: "build/tmp/ccu-jack", DstDir: "rc.d", Exe: true},
 	}
 )
 
@@ -95,6 +97,7 @@ func build() {
 	// Generate rc.d script from template
 	tmplData := struct{ Copyright string }{Copyright: appCopyright}
 	releng.WriteTemplate("dist/ccu/rc.d/ccu-jack.tmpl", "build/tmp/ccu-jack", tmplData)
+	buildCCUAddonArchive()
 
 	for _, ts := range targetSystems {
 		sysSpec, ok := sysSpecs[ts]
@@ -110,14 +113,8 @@ func build() {
 		releng.BuildGo(appPkg, binFile, sysSpec.goSpec)
 
 		// build archive
-		var allFiles []releng.CopySpec
-		if sysSpec.addon {
-			allFiles = addonFiles
-			allFiles = append(allFiles, releng.CopySpec{Inc: binFile, DstDir: "addon", Exe: true})
-		} else {
-			allFiles = files
-			allFiles = append(allFiles, releng.CopySpec{Inc: binFile, Exe: true})
-		}
+		allFiles := append([]releng.CopySpec{}, files...)
+		allFiles = append(allFiles, releng.CopySpec{Inc: binFile, Exe: true})
 		var arcExt string
 		if sysSpec.goSpec.OS == "windows" {
 			arcExt = ".zip"
@@ -125,38 +122,28 @@ func build() {
 			arcExt = ".tar.gz"
 		}
 		releng.Archive(appName+"-"+ts+"-"+appVersion+arcExt, allFiles)
-		if ts == "ccu3-rm-rp2+3" {
-			buildDebmaticArchive(binFile)
-		}
 	}
 }
 
-func buildDebmaticArchive(binFile string) {
-	const src = "dist/debmatic/"
-	const addonDir = "usr/local/addons/ccu-jack"
+func buildCCUAddonArchive() {
+	allFiles := append([]releng.CopySpec{}, addonFiles...)
+	releng.Mkdir("build/tmp/ccu-addon")
+	for _, ts := range ccuTargetSystems {
+		sysSpec, ok := sysSpecs[ts]
+		if !ok {
+			releng.Must(fmt.Errorf("Missing Go build specification: %s", ts))
+		}
 
-	releng.RequireFiles([]string{
-		src + "ccu-jack.cfg",
-		src + "config.cgi",
-		src + "ccu-jack.service",
-		src + "update-hm_addons",
-	})
-	debmaticFiles := []releng.CopySpec{
-		{Inc: binFile, DstDir: addonDir, Exe: true},
-		{Inc: "build/tmp/VERSION", DstDir: addonDir},
-		{Inc: "README.md", DstDir: addonDir},
-		{Inc: "LICENSE.txt", DstDir: addonDir},
-		{Inc: src + "ccu-jack.cfg", DstDir: "etc/config/addons"},
-		{Inc: "dist/update_hm_addons.tcl", DstDir: addonDir, Exe: true},
-		{Inc: "third-party-licenses/*", DstDir: addonDir + "/third-party-licenses"},
-		{Inc: "wd/webui/*", DstDir: addonDir + "/webui"},
-		{Inc: "wd/webui/ext/*", DstDir: addonDir + "/webui/ext"},
-		{Inc: src + "config.cgi", DstDir: "etc/config/addons/www/ccu-jack", Exe: true},
-		{Inc: src + "ccu-jack.service", DstDir: "usr/lib/systemd/system"},
-		{Inc: src + "update-hm_addons", DstDir: addonDir, Exe: true},
+		binFile := "build/tmp/ccu-addon/" + appName + "-" + ts
+		releng.BuildGo(appPkg, binFile, sysSpec.goSpec)
+		allFiles = append(allFiles, releng.CopySpec{
+			Inc:    binFile,
+			DstDir: "addon/bin",
+			Exe:    true,
+		})
 	}
 
-	releng.Archive(appName+"-debmatic-rp2+3-"+appVersion+".tar.gz", debmaticFiles)
+	releng.Archive(appName+"-ccu-addon-"+appVersion+".tar.gz", allFiles)
 }
 
 // launcher
