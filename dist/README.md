@@ -71,6 +71,14 @@ dpkg preserves the configuration on updates. `postinst`/`prerm`/`postrm`
 handle service registration, the `hm_addons.cfg` entry, and cleanup. Use
 `apt purge ccu-jack` to remove a package installation.
 
+To migrate an existing tar.gz installation, install the `.deb` directly over
+the existing files; do not remove the tar.gz installation first. Back up
+`/etc/config/addons/ccu-jack.cfg`. If dpkg asks how to handle that file, choose
+`N`/`O` or press Enter (the default) to keep the current configuration; `Y`/`I`
+replaces it with the package version. If Debmatic is active, installation
+restarts CCU-Jack and causes a short interruption. After migration, use only
+`.deb` packages for updates.
+
 The old ARMv7 Debmatic tar.gz is no longer generated. The `.deb` is the
 Debmatic installation and update package for all supported Debian
 architectures. There is no APT repository, so APT will not discover new
